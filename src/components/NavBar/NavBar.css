@@ -1,0 +1,19 @@
+.main-nav {
+    background-color: white;
+    padding: 20px 0;
+}
+
+.link-nav {
+    text-decoration: none;
+    color: #282c34;
+    font-size: 22px;
+    transition: all 1s;
+}
+
+.link-nav:hover {
+    color: #0d6efd;
+}
+
+.active {
+    color: #0d6efd;
+}

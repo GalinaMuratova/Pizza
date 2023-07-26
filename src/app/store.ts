@@ -1,7 +1,10 @@
 import { configureStore } from '@reduxjs/toolkit';
+import {adminPageReducer} from "../container/AdminPage/adminPageSlice";
 
 export const store = configureStore({
-    reducer: {},
+    reducer: {
+        adminPage:adminPageReducer,
+    },
 });
 
 export type RootState = ReturnType<typeof store.getState>;

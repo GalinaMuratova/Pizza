@@ -1,0 +1,7 @@
+.block-dishes {
+    width: 870px;
+    margin: 20px auto;
+    flex-wrap: wrap;
+    display: flex;
+    justify-content: space-around;
+}
