@@ -6,10 +6,12 @@ import {AppDispatch, RootState} from "../../app/store";
 import {deleteDish, fetchDishes} from "./adminPageSlice";
 import DishesInfoBlock from "../../components/DishesInfoBlock/DishesInfoBlock";
 import './adminPage.css';
+import Spinner from "../../components/Spinner/Spinner";
 
 const AdminPage = () => {
     const dispatch: AppDispatch= useDispatch();
     const dishes = useSelector((state:RootState) => state.adminPage.dishes);
+    const loading = useSelector((state:RootState) => state.adminPage.loading);
 
     useEffect(() => {
         dispatch(fetchDishes());
@@ -22,6 +24,18 @@ const AdminPage = () => {
         }
     };
 
+    let dishesBlock = (
+        <div className='block-dishes'>
+            {dishes.map((dish) => (
+                <DishesInfoBlock key={dish.id} id={dish.id} title={dish.title} price={dish.price} img={dish.image} onDelete={()=> onDeleteDish(dish.id)}/>
+            ))}
+        </div>
+    );
+
+    if (loading) {
+        dishesBlock = <Spinner />
+    }
+
     return (
         <div>
             <NavBar />
@@ -29,11 +43,7 @@ const AdminPage = () => {
                 <h2>Dishes</h2>
                 <Link className='btn btn-primary my-2' to='/admin/addDish'>Add new dish</Link>
             </div>
-            <div className='block-dishes'>
-                {dishes.map((dish) => (
-                    <DishesInfoBlock key={dish.id} id={dish.id} title={dish.title} price={dish.price} img={dish.image} onDelete={()=> onDeleteDish(dish.id)}/>
-                ))}
-            </div>
+            {dishesBlock}
         </div>
     );
 };

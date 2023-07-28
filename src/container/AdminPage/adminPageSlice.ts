@@ -1,14 +1,6 @@
-import {createAsyncThunk, createSlice} from '@reduxjs/toolkit';
-import {IDish} from "../../types";
+import {createAsyncThunk, createSlice, PayloadAction} from '@reduxjs/toolkit';
+import {ICartDish, IDish, IDishMut} from "../../types";
 import axiosApi from "../../axiosApi";
-
-
-interface IDishMut {
-    id: string;
-    title:string;
-    price:number;
-    image: string;
-}
 
 interface UpdateDish {
     id: string;
@@ -22,7 +14,9 @@ interface Dishes {
     loading: boolean;
     editLoading:boolean;
     saveLoading:boolean;
-    deleteLoading:boolean;
+    deleteLoading:boolean | string;
+    updateDish: UpdateDish[];
+    cartDishes: ICartDish[];
 }
 
 const initialState: Dishes = {
@@ -32,7 +26,9 @@ const initialState: Dishes = {
     loading: false,
     editLoading:false,
     saveLoading:false,
-    deleteLoading:false
+    deleteLoading:false,
+    updateDish: [],
+    cartDishes:[]
 };
 
 export const fetchDishes = createAsyncThunk<IDishMut[]> (
@@ -40,10 +36,13 @@ export const fetchDishes = createAsyncThunk<IDishMut[]> (
     async () => {
         const response = await axiosApi.get('/dishes.json');
         let dishes:IDishMut[] = [];
+        let number = 0;
         if (response.data) {
             dishes = Object.keys(response.data).map((key) => {
                 const newDish = response.data[key];
                 newDish.id = key;
+                number = Number(newDish.price);
+                newDish.price = number;
                 return newDish
             });
         }
@@ -55,6 +54,10 @@ export const fetchDish = createAsyncThunk<IDish, string>(
     'contacts/getContact',
     async (id) => {
         const response = await axiosApi.get<IDish>(`/dishes/${id}.json`);
+        console.log(response.data)
+        let number = 0;
+        number = Number(response.data.price);
+        response.data.price = number;
         return {
             ...response.data
         };
@@ -79,13 +82,35 @@ export const deleteDish = createAsyncThunk<void, string>(
     'dishes/delete',
     async (id: string) => {
         await axiosApi.delete(`dishes/${id}.json`);
-    }
+    },
 );
 
 const adminPageSlice = createSlice({
     name: 'dishes',
     initialState,
-    reducers: {},
+    reducers: {
+        addDishToCart: (state, {payload: dish}: PayloadAction<IDishMut>) => {
+            const index = state.cartDishes.findIndex(cartDish => cartDish.dish.id === dish.id);
+            if (index !== -1) {
+                state.cartDishes[index].amount++;
+            } else {
+                state.cartDishes.push({
+                    amount: 1,
+                    dish,
+                });
+            }
+        },
+        removeFromCart: (state, action: PayloadAction<string>) => {
+            const index = state.cartDishes.findIndex((cartDish) => cartDish.dish.id === action.payload);
+            if (index !== -1) {
+                if (state.cartDishes[index].amount > 1) {
+                    state.cartDishes[index].amount--;
+                } else {
+                    state.cartDishes = state.cartDishes.filter((cartDish) => cartDish.dish.id !== action.payload);
+                }
+            }
+        },
+    },
     extraReducers:(builder) => {
         builder.addCase(fetchDishes.pending, (state) => {
             state.loading = true;
@@ -125,8 +150,8 @@ const adminPageSlice = createSlice({
         builder.addCase(addDish.rejected, (state) => {
             state.addLoading = false;
         });
-        builder.addCase(deleteDish.pending, (state) => {
-            state.deleteLoading = true;
+        builder.addCase(deleteDish.pending, (state, action) => {
+            state.deleteLoading = action.meta.arg;
         });
         builder.addCase(deleteDish.fulfilled, (state) => {
             state.deleteLoading = false;
@@ -139,3 +164,4 @@ const adminPageSlice = createSlice({
 });
 
 export const adminPageReducer = adminPageSlice.reducer;
+export const {addDishToCart, removeFromCart} = adminPageSlice.actions;

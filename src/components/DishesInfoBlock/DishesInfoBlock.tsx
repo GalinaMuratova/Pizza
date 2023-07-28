@@ -23,7 +23,7 @@ const DishesInfoBlock: React.FC<Props> = (props) => {
         </div>
     );
 
-    if (deleteLoading) {
+    if (deleteLoading && deleteLoading === props.id) {
         btn= <Spinner />
     }
 
