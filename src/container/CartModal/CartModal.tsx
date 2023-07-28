@@ -1,10 +1,10 @@
 import React from 'react';
 import {useDispatch, useSelector} from "react-redux";
 import {AppDispatch, RootState} from "../../app/store";
-import {ICartDish} from "../../types";
+import {ICartDish, IOrder} from "../../types";
 import CartItem from "../../components/CartItem/CartItem";
 import './cartModal.css';
-import {removeFromCart} from "../AdminPage/adminPageSlice";
+import {cleanCart, postOrder, removeFromCart} from "../AdminPage/adminPageSlice";
 
 interface Props {
     onClose: () => void;
@@ -28,6 +28,23 @@ const CartModal:React.FC<Props> = ({onClose}) => {
         await dispatch(removeFromCart(id));
     };
 
+    const handleOrder = async () => {
+        if (cartDishes.length === 0) {
+            return;
+        }
+
+        const orders: IOrder = cartDishes.reduce((acc:any, cartDish) => {
+            acc[cartDish.dish.id] = Number(cartDish.amount);
+            return acc;
+        }, {});
+
+        await dispatch(postOrder(orders));
+
+        cartDishes.forEach((cartDish) => dispatch(cleanCart(cartDish.dish.id)));
+
+        onClose();
+    };
+
     let order = (
         <div className='text-center modal-info'>
             <h2>Cart is empty</h2>
@@ -40,23 +57,23 @@ const CartModal:React.FC<Props> = ({onClose}) => {
         order =
             <>
                 <div className='modal-info'>
-                    <h2 className='text-center my-3 mb-5'>Your order</h2>
+                    <h3 className='text-center mb-3'>Your order</h3>
                     <div>
                         {cartDishes.map((el) => (
                             <CartItem key={el.dish.id} cartDish={el} removeDish={() => removeDish(el.dish.id)}/>
                         ))}
                     </div>
-                    <div className='d-flex justify-content-between px-2 mb-5'>
+                    <div className='d-flex justify-content-between px-1 mb-3'>
                         <span>Delivery</span>
                         <span className=' price-text'>150 KGS</span>
                     </div>
-                    <div className='d-flex justify-content-between pt-2 mb-5 px-2 border-top'>
+                    <div className='d-flex justify-content-between px-1 border-top'>
                         <span><b>Total</b></span>
                         <span className=' price-text'><b>{totalOrderPrice} KGS</b></span>
                     </div>
-                    <div className='d-flex justify-content-between'>
+                    <div className='d-flex justify-content-between mt-2'>
                         <button onClick={onClose} className='btn btn-secondary col-5'>Cancel</button>
-                        <button className='btn btn-primary col-5'>Order</button>
+                        <button onClick={handleOrder} className='btn btn-primary col-5'>Order</button>
                     </div>
                 </div>
             </>;

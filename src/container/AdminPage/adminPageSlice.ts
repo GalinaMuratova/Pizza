@@ -1,23 +1,6 @@
 import {createAsyncThunk, createSlice, PayloadAction} from '@reduxjs/toolkit';
-import {ICartDish, IDish, IDishMut} from "../../types";
+import {Dishes, IDish, IDishMut, IOrder, UpdateDish} from "../../types";
 import axiosApi from "../../axiosApi";
-
-interface UpdateDish {
-    id: string;
-    dish: IDish;
-}
-
-interface Dishes {
-    dishes:IDishMut[];
-    dish:IDish | null;
-    addLoading: boolean;
-    loading: boolean;
-    editLoading:boolean;
-    saveLoading:boolean;
-    deleteLoading:boolean | string;
-    updateDish: UpdateDish[];
-    cartDishes: ICartDish[];
-}
 
 const initialState: Dishes = {
     dishes: [],
@@ -28,7 +11,8 @@ const initialState: Dishes = {
     saveLoading:false,
     deleteLoading:false,
     updateDish: [],
-    cartDishes:[]
+    cartDishes:[],
+    orders:[],
 };
 
 export const fetchDishes = createAsyncThunk<IDishMut[]> (
@@ -54,7 +38,6 @@ export const fetchDish = createAsyncThunk<IDish, string>(
     'contacts/getContact',
     async (id) => {
         const response = await axiosApi.get<IDish>(`/dishes/${id}.json`);
-        console.log(response.data)
         let number = 0;
         number = Number(response.data.price);
         response.data.price = number;
@@ -64,10 +47,35 @@ export const fetchDish = createAsyncThunk<IDish, string>(
     },
 );
 
+export const fetchOrders = createAsyncThunk(
+    'orders/getOrders',
+    async () => {
+        const response = await axiosApi.get<IOrder>('/orders.json');
+        const ordersArray = Object.entries(response.data).map(([orderId, orderItems]) => {
+            const itemsArray = Object.entries(orderItems).map(([dishId, amount]) => ({
+                dishId,
+                amount,
+            }));
+            return {
+                orderId,
+                items: itemsArray,
+            };
+        });
+        return ordersArray;
+    }
+);
+
 export const addDish = createAsyncThunk<void, IDish >(
     'dishes/fetchAdd',
     async (dish) => {
         await axiosApi.post('/dishes.json', dish);
+    },
+);
+
+export const postOrder = createAsyncThunk<void, IOrder>(
+    'orders/fetchPost',
+    async (order: IOrder) => {
+        await axiosApi.post('/orders.json', order);
     },
 );
 
@@ -83,6 +91,13 @@ export const deleteDish = createAsyncThunk<void, string>(
     async (id: string) => {
         await axiosApi.delete(`dishes/${id}.json`);
     },
+);
+
+export const completeOrder = createAsyncThunk<void, string>(
+    'orders/completeOrder',
+    async (id: string) => {
+        await axiosApi.delete(`/orders/${id}.json`);
+    }
 );
 
 const adminPageSlice = createSlice({
@@ -110,6 +125,9 @@ const adminPageSlice = createSlice({
                 }
             }
         },
+        cleanCart: (state, action: PayloadAction<string>) => {
+            state.cartDishes = state.cartDishes.filter((cartDish) => cartDish.dish.id !== action.payload);
+        },
     },
     extraReducers:(builder) => {
         builder.addCase(fetchDishes.pending, (state) => {
@@ -131,6 +149,9 @@ const adminPageSlice = createSlice({
         });
         builder.addCase(fetchDish.rejected, (state) => {
             state.editLoading = false;
+        });
+        builder.addCase(fetchOrders.fulfilled, (state, action) => {
+            state.orders = action.payload;
         });
         builder.addCase(updateDish.pending, (state) => {
             state.saveLoading = true;
@@ -164,4 +185,4 @@ const adminPageSlice = createSlice({
 });
 
 export const adminPageReducer = adminPageSlice.reducer;
-export const {addDishToCart, removeFromCart} = adminPageSlice.actions;
+export const {addDishToCart, removeFromCart, cleanCart} = adminPageSlice.actions;
